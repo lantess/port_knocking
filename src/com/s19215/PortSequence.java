@@ -1,5 +1,7 @@
 package com.s19215;
 
+import java.util.Arrays;
+
 public class PortSequence {
     private int[] ports;
 
@@ -19,7 +21,7 @@ public class PortSequence {
     public boolean checkOrder(int[] correct){
         if(hasEmptyFields())
             return false;
-        boolean res = correct.equals(ports);
+        boolean res = Arrays.equals(correct, ports);
         reset();
         return res;
 

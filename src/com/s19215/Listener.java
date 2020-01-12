@@ -28,6 +28,7 @@ public class Listener {
         lastAccessTime = new HashMap<>();
         initializeSockets(args);
         initializeListeners();
+        startListeners();
     }
     private void initializeSockets(String[] args) throws SocketException {
         for(int p : parseStringToPortNumbers(args)){
@@ -56,11 +57,22 @@ public class Listener {
             while(isAlive){
                 try {
                     s.receive(packet);
-                    int no = ByteEncoder.byteToInt(packet.getData(), 0);
-                    int port = ByteEncoder.byteToInt(packet.getData(),4);
-                    registerKnock(packet.getAddress(), no, port);
+                    int no = ByteEncoder.bytesToInt(packet.getData());
+                    registerKnock(packet.getAddress(), no, s.getLocalPort());
                     if(checkAddress(packet.getAddress())){
-
+                        int rPort = getRandomPort();
+                        byte[] portData = ByteEncoder.intToBytes(rPort);
+                        DatagramPacket rPck = new DatagramPacket(portData, portData.length,
+                                packet.getAddress(), packet.getPort());
+                        sockets.get(sockets.size()-1).send(rPck);
+                        TCPButOnUDPSender sender;
+                        try {
+                            sender = new TCPButOnUDPSender(rPort, packet.getAddress());
+                            sender.send();
+                        } catch (Exception e) {
+                            System.out.println("Nie udało się wysłać wiadomości do klienta. "+e.getMessage());
+                            // nic nie będę robił
+                        }
                     }
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
@@ -92,5 +104,14 @@ public class Listener {
                 res[i] = sockets.get(i).getLocalPort();
             return res;
         }
+    }
+
+    private int getRandomPort(){
+        return 1025+(int)(Math.random()*3096);
+    }
+
+    private void startListeners(){
+        for(Thread t: listeners)
+            t.start();
     }
 }
